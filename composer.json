@@ -1,0 +1,22 @@
+{
+  "name": "xearts/eccube3",
+  "authors": [
+    {
+      "name": "T.Takabayashi",
+      "email": "t.takabayashi@xearts.jp"
+    }
+  ],
+  "require": {
+    "ec-cube/ec-cube": "~3.0.9"
+  },
+  "require-dev": {
+
+  },
+  "autoload": {
+    "psr-4": {
+      "XeArts\\Eccube": "src/"
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
