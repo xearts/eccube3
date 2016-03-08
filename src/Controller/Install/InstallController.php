@@ -7,13 +7,14 @@ use Doctrine\DBAL\Migrations\MigrationException;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\SchemaTool;
 use Eccube\Common\Constant;
-use Eccube\InstallApplication;
 use Eccube\Util\Str;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Form\Form;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Yaml\Yaml;
+use XeArts\Eccube\InstallApplication;
+
 
 class InstallController
 {
@@ -35,11 +36,25 @@ class InstallController
 
     const SESSION_KEY = 'eccube.session.install';
 
+
+    private $base_path;
+
+    private $resource_path;
+
     public function __construct()
     {
-        $this->config_path = __DIR__ . '/../../../../app/config/eccube';
-        $this->dist_path = __DIR__ . '/../../Resource/config';
-        $this->cache_path = __DIR__ . '/../../../../app/cache';
+    }
+
+    protected function initPath(InstallApplication $app)
+    {
+        $this->base_path = $app['base_path'];
+
+        $this->config_path = $this->base_path.'/app/config/eccube';
+        $this->cache_path = $this->base_path.'/app/cache';
+
+        $this->resource_path = $this->base_path.'/vendor/ec-cube/ec-cube/src/Eccube/Resource';
+        $this->dist_path = $this->resource_path.'/config';
+
     }
 
     private function isValid(Request $request, Form $form)
@@ -67,6 +82,7 @@ class InstallController
     // 最初からやり直す場合、SESSION情報をクリア
     public function index(InstallApplication $app, Request $request)
     {
+        $this->initPath($app);
         $request->getSession()->remove(self::SESSION_KEY);
 
         return $app->redirect($app->url('install_step1'));
@@ -75,6 +91,7 @@ class InstallController
     // ようこそ
     public function step1(InstallApplication $app, Request $request)
     {
+        $this->initPath($app);
         $form = $app['form.factory']
             ->createBuilder('install_step1')
             ->getForm();
@@ -95,6 +112,7 @@ class InstallController
     // 権限チェック
     public function step2(InstallApplication $app, Request $request)
     {
+        $this->initPath($app);
         $this->getSessionData($request);
 
         $protectedDirs = $this->getProtectedDirs();
@@ -117,6 +135,7 @@ class InstallController
     //    サイトの設定
     public function step3(InstallApplication $app, Request $request)
     {
+        $this->initPath($app);
         $form = $app['form.factory']
             ->createBuilder('install_step3')
             ->getForm();
@@ -181,6 +200,7 @@ class InstallController
     //    データベースの設定
     public function step4(InstallApplication $app, Request $request)
     {
+        $this->initPath($app);
         $form = $app['form.factory']
             ->createBuilder('install_step4')
             ->getForm();
@@ -224,6 +244,7 @@ class InstallController
     //    データベースの初期化
     public function step5(InstallApplication $app, Request $request)
     {
+        $this->initPath($app);
         set_time_limit(0);
         $this->app = $app;
         $form = $app['form.factory']
@@ -285,6 +306,7 @@ class InstallController
     //    インストール完了
     public function complete(InstallApplication $app, Request $request)
     {
+        $this->initPath($app);
         $config_file = $this->config_path . '/path.yml';
         $config = Yaml::parse(file_get_contents($config_file));
 
@@ -393,15 +415,15 @@ class InstallController
         ));
 
         $this->app->register(new \Dflydev\Silex\Provider\DoctrineOrm\DoctrineOrmServiceProvider(), array(
-            'orm.proxies_dir' => __DIR__ . '/../../app/cache/doctrine',
+            'orm.proxies_dir' => $this->base_path.'/app/cache/doctrine',
             'orm.em.options' => array(
                 'mappings' => array(
                     array(
                         'type' => 'yml',
                         'namespace' => 'Eccube\Entity',
                         'path' => array(
-                            __DIR__ . '/../../Resource/doctrine',
-                            __DIR__ . '/../../Resource/doctrine/master',
+                            $this->resource_path.'/doctrine',
+                            $this->resource_path.'/doctrine/master',
                         ),
                     ),
 
@@ -551,14 +573,14 @@ class InstallController
 
     private function getMigration()
     {
-        $app = \Eccube\Application::getInstance();
+        $app = \XeArts\Eccube\Application::getInstance(array('base_path' => $this->base_path));
         $app->initialize();
         $app->boot();
 
         $config = new Configuration($app['db']);
         $config->setMigrationsNamespace('DoctrineMigrations');
 
-        $migrationDir = __DIR__ . '/../../Resource/doctrine/migration';
+        $migrationDir = $this->resource_path.'/doctrine/migration';
         $config->setMigrationsDirectory($migrationDir);
         $config->registerMigrationsFromDirectory($migrationDir);
 
@@ -589,7 +611,7 @@ class InstallController
     private function getProtectedDirs()
     {
         $protectedDirs = array();
-        $base = __DIR__ . '/../../../..';
+        $base = $this->base_path;
         $dirs = array(
             '/html',
             '/app',
@@ -760,7 +782,7 @@ class InstallController
         $ADMIN_ROUTE = $data['admin_dir'];
         $TEMPLATE_CODE = 'default';
         $USER_DATA_ROUTE = 'user_data';
-        $ROOT_DIR = realpath(__DIR__ . '/../../../../');
+        $ROOT_DIR = realpath($this->base_path);
         $ROOT_URLPATH = $request->getBasePath();
 
         $target = array('${ADMIN_ROUTE}', '${TEMPLATE_CODE}', '${USER_DATA_ROUTE}', '${ROOT_DIR}', '${ROOT_URLPATH}');
@@ -772,6 +794,14 @@ class InstallController
             $replace,
             file_get_contents($this->dist_path . '/path.yml.dist')
         );
+
+        // リソースディレクトリを書き換え
+        $content = str_replace(
+            "{$ROOT_DIR}/src/Eccube/Resource",
+            realpath($this->resource_path),
+            $content
+        );
+
         $fs->dumpFile($config_file, $content);
 
         return $this;
@@ -836,6 +866,7 @@ class InstallController
      */
     public function migration(InstallApplication $app, Request $request)
     {
+        $this->initPath($app);
         return $app['twig']->render('migration.twig');
     }
 
@@ -850,7 +881,8 @@ class InstallController
      */
     public function migration_plugin(InstallApplication $app, Request $request)
     {
-        $eccube = \Eccube\Application::getInstance();
+        $this->initPath($app);
+        $eccube = \XeArts\Eccube\Application::getInstance(array('base_path' => $app['base_path']));
         $eccube->initialize();
         $eccube->boot();
 
@@ -877,9 +909,10 @@ class InstallController
      */
     public function migration_end(InstallApplication $app, Request $request)
     {
+        $this->initPath($app);
         $this->doMigrate();
 
-        $config_app = new \Eccube\Application(); // install用のappだとconfigが取れないので
+        $config_app = new \XeArts\Eccube\Application(array('base_path' => $app['base_path'])); // install用のappだとconfigが取れないので
         $config_app->initialize();
         $config_app->boot();
         \Eccube\Util\Cache::clear($config_app, true);

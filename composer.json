@@ -14,7 +14,7 @@
   },
   "autoload": {
     "psr-4": {
-      "XeArts\\Eccube": "src/"
+      "XeArts\\Eccube\\": "src/"
     }
   },
   "minimum-stability": "dev",

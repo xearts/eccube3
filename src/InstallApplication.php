@@ -1,24 +1,29 @@
 <?php
 namespace XeArts\Eccube;
 
-use Eccube\ControllerProvider\InstallControllerProvider;
-use Eccube\InstallApplication as BaseApplication;
+use Eccube\Application\ApplicationTrait;
+use XeArts\Eccube\ControllerProvider\InstallControllerProvider;
 use Eccube\ServiceProvider\InstallServiceProvider;
 use Symfony\Component\Yaml\Yaml;
 
-class InstallApplication extends BaseApplication
+class InstallApplication extends ApplicationTrait
 {
     public function __construct(array $values = array())
     {
         $app = $this;
+        if (empty($values['base_path'])) {
+            throw new \InvalidArgumentException('base_path must be contained in values.');
+        }
 
         parent::__construct($values);
 
+        $baePath = $app['base_path'];
+
         $app->register(new \Silex\Provider\MonologServiceProvider(), array(
-            'monolog.logfile' => __DIR__.'/../app/log/install.log',
+            'monolog.logfile' => $baePath.'/app/log/install.log',
         ));
 
-        $resourcePath = __DIR__.'/../vendor/ec-cube/ec-cube/src/Eccube/Resource';
+        $resourcePath = $baePath.'/vendor/ec-cube/ec-cube/src/Eccube/Resource';
         $configPath = $resourcePath . '/config';
 
         // load config

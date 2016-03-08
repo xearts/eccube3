@@ -6,7 +6,10 @@ use Eccube\ControllerProvider\AdminControllerProvider;
 use Eccube\ControllerProvider\FrontControllerProvider;
 use Eccube\ServiceProvider\EccubeMonologServiceProvider;
 use Eccube\ServiceProvider\EccubeServiceProvider;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Yaml\Yaml;
 
 class Application extends BaseApplication
@@ -33,25 +36,21 @@ class Application extends BaseApplication
 
     public function __construct(array $values = array())
     {
-        parent::__construct($values);
-
-        if (is_null(self::$instance)) {
-            self::$instance = $this;
+        if (empty($values['base_path'])) {
+            throw new \InvalidArgumentException('base_path must be contained in values');
         }
-
-        // load config
-        $this->initConfig();
-
-        // init monolog
-        $this->initLogger();
+        parent::__construct($values);
     }
 
     public function initConfig()
     {
         // load config
-        $this['config'] = $this->share(function() {
-            $ymlPath = __DIR__.'/../../app/config/eccube';
-            $distPath = __DIR__.'/../../src/Eccube/Resource/config';
+        $this['config'] = $this->share(function ($app) {
+            $basePath = $app['base_path'];
+            $ymlPath = $basePath.'/app/config/eccube';
+
+            $resourcePath = $basePath.'/vendor/ec-cube/ec-cube/src/Eccube/Resource';
+            $distPath = $resourcePath.'/config';
 
             $config = array();
             $config_yml = $ymlPath.'/config.yml';
@@ -125,6 +124,7 @@ class Application extends BaseApplication
 
             $configAll = array_replace_recursive($configAll, $config_nav_dist, $config_nav);
 
+            $configAll['resource_path'] = $resourcePath;
             return $configAll;
         });
     }
@@ -133,81 +133,8 @@ class Application extends BaseApplication
     {
         $app = $this;
         $this->register(new EccubeMonologServiceProvider($app));
-        $this['monolog.logfile'] = __DIR__.'/../../app/log/site.log';
+        $this['monolog.logfile'] = $this['config']['root_dir'].'/app/log/site.log';
         $this['monolog.name'] = 'eccube';
-    }
-
-    public function initialize()
-    {
-        if ($this->initialized) {
-            return;
-        }
-
-        // init locale
-        $this->initLocale();
-
-        // init session
-        $this->initSession();
-
-        // init twig
-        $this->initRendering();
-
-        // init provider
-        $this->register(new \Silex\Provider\HttpFragmentServiceProvider());
-        $this->register(new \Silex\Provider\UrlGeneratorServiceProvider());
-        $this->register(new \Silex\Provider\FormServiceProvider());
-        $this->register(new \Silex\Provider\SerializerServiceProvider());
-        $this->register(new \Eccube\ServiceProvider\ValidatorServiceProvider());
-
-        $app = $this;
-        $this->error(function(\Exception $e, $code) use ($app) {
-            if ($app['debug']) {
-                return;
-            }
-
-            switch ($code) {
-                case 403:
-                    $title = 'アクセスできません。';
-                    $message = 'お探しのページはアクセスができない状況にあるか、移動もしくは削除された可能性があります。';
-                    break;
-                case 404:
-                    $title = 'ページがみつかりません。';
-                    $message = 'URLに間違いがないかご確認ください。';
-                    break;
-                default:
-                    $title = 'システムエラーが発生しました。';
-                    $message = '大変お手数ですが、サイト管理者までご連絡ください。';
-                    break;
-            }
-
-            return $app->render('error.twig', array(
-                'error_title' => $title,
-                'error_message' => $message,
-            ));
-        });
-
-        // init mailer
-        $this->initMailer();
-
-        // init doctrine orm
-        $this->initDoctrine();
-
-        // Set up the DBAL connection now to check for a proper connection to the database.
-        $this->checkDatabaseConnection();
-
-        // init security
-        $this->initSecurity();
-
-        // init ec-cube service provider
-        $this->register(new EccubeServiceProvider());
-
-        // mount controllers
-        $this->register(new \Silex\Provider\ServiceControllerServiceProvider());
-        $this->mount('', new FrontControllerProvider());
-        $this->mount('/'.trim($this['config']['admin_route'], '/').'/', new AdminControllerProvider());
-        Request::enableHttpMethodParameterOverride(); // PUTやDELETEできるようにする
-
-        $this->initialized = true;
     }
 
     public function initLocale()
@@ -230,12 +157,12 @@ class Application extends BaseApplication
                 $translator->addResource('xliff', $file, $app['locale'], 'validators');
             }
 
-            $file = __DIR__.'/Resource/locale/validator.'.$app['locale'].'.yml';
+            $file = $this['config']['resource_path'].'/locale/validator.'.$app['locale'].'.yml';
             if (file_exists($file)) {
                 $translator->addResource('yaml', $file, $app['locale'], 'validators');
             }
 
-            $file = __DIR__.'/Resource/locale/message.'.$app['locale'].'.yml';
+            $file = $this['config']['resource_path'].'/locale/message.'.$app['locale'].'.yml';
             if (file_exists($file)) {
                 $translator->addResource('yaml', $file, $app['locale']);
             }
@@ -244,21 +171,6 @@ class Application extends BaseApplication
         }));
     }
 
-    public function initSession()
-    {
-        $this->register(new \Silex\Provider\SessionServiceProvider(), array(
-            'session.storage.save_path' => $this['config']['root_dir'].'/app/cache/eccube/session',
-            'session.storage.options' => array(
-                'name' => 'eccube',
-                'cookie_path' => $this['config']['root_urlpath'] ?: '/',
-                'cookie_secure' => $this['config']['force_ssl'],
-                'cookie_lifetime' => $this['config']['cookie_lifetime'],
-                'cookie_httponly' => true,
-                // cookie_domainは指定しない
-                // http://blog.tokumaru.org/2011/10/cookiedomain.html
-            ),
-        ));
-    }
 
     public function initRendering()
     {
@@ -283,16 +195,16 @@ class Application extends BaseApplication
                 $app['front'] = false;
 
                 if (isset($app['profiler'])) {
-                    $cacheBaseDir = __DIR__.'/../../app/cache/twig/profiler/';
+                    $cacheBaseDir = $this['config']['root_dir'].'/app/cache/twig/profiler/';
                 } else {
-                    $cacheBaseDir = __DIR__.'/../../app/cache/twig/production/';
+                    $cacheBaseDir = $this['config']['root_dir'].'/app/cache/twig/production/';
                 }
                 if (strpos($app['request']->getPathInfo(), '/'.trim($app['config']['admin_route'], '/')) === 0) {
-                    if (file_exists(__DIR__.'/../../app/template/admin')) {
-                        $paths[] = __DIR__.'/../../app/template/admin';
+                    if (file_exists($this['config']['root_dir'].'/app/template/admin')) {
+                        $paths[] = $this['config']['root_dir'].'/app/template/admin';
                     }
                     $paths[] = $app['config']['template_admin_realdir'];
-                    $paths[] = __DIR__.'/../../app/Plugin';
+                    $paths[] = $this['config']['root_dir'].'/app/Plugin';
                     $cache = $cacheBaseDir.'admin';
                     $app['admin'] = true;
                 } else {
@@ -300,7 +212,7 @@ class Application extends BaseApplication
                         $paths[] = $app['config']['template_realdir'];
                     }
                     $paths[] = $app['config']['template_default_realdir'];
-                    $paths[] = __DIR__.'/../../app/Plugin';
+                    $paths[] = $this['config']['root_dir'].'/app/Plugin';
                     $cache = $cacheBaseDir.$app['config']['template_code'];
                     $app['front'] = true;
                 }
@@ -416,7 +328,7 @@ class Application extends BaseApplication
         $this->register(new \Saxulum\DoctrineOrmManagerRegistry\Silex\Provider\DoctrineOrmManagerRegistryProvider());
 
         // プラグインのmetadata定義を合わせて行う.
-        $pluginBasePath = __DIR__.'/../../app/Plugin';
+        $pluginBasePath = $this['config']['root_dir'].'/app/Plugin';
         $finder = Finder::create()
             ->in($pluginBasePath)
             ->directories()
@@ -427,8 +339,8 @@ class Application extends BaseApplication
             'type' => 'yml',
             'namespace' => 'Eccube\Entity',
             'path' => array(
-                __DIR__.'/Resource/doctrine',
-                __DIR__.'/Resource/doctrine/master',
+                $this['config']['resource_path'].'/doctrine',
+                $this['config']['resource_path'].'/doctrine/master',
             ),
         );
 
@@ -459,7 +371,7 @@ class Application extends BaseApplication
         }
 
         $this->register(new \Dflydev\Silex\Provider\DoctrineOrm\DoctrineOrmServiceProvider(), array(
-            'orm.proxies_dir' => __DIR__.'/../../app/cache/doctrine',
+            'orm.proxies_dir' => $this['config']['root_dir'].'/app/cache/doctrine',
             'orm.em.options' => array(
                 'mappings' => $ormMappings,
             ),
@@ -771,7 +683,7 @@ class Application extends BaseApplication
     public function loadPlugin()
     {
         // プラグインディレクトリを探索.
-        $basePath = __DIR__.'/../../app/Plugin';
+        $basePath = $this['config']['root_dir'].'/app/Plugin';
         $finder = Finder::create()
             ->in($basePath)
             ->directories()
@@ -897,7 +809,7 @@ class Application extends BaseApplication
             $this['db']->connect();
         } catch (\Doctrine\DBAL\DBALException $e) {
             $this['monolog']->error($e->getMessage());
-            $this['twig.path'] = array(__DIR__.'/Resource/template/exception');
+            $this['twig.path'] = array($this['config']['resource_path'].'/template/exception');
             $html = $this['twig']->render('error.twig', array(
                 'error_title' => 'データーベース接続エラー',
                 'error_message' => 'データーベースを確認してください',

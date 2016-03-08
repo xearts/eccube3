@@ -47,7 +47,7 @@ require_once __DIR__.'/../vendor/autoload.php';
 Debug::enable();
 
 // load configs.
-$app = \XeArts\Eccube\Application::getInstance();
+$app = \XeArts\Eccube\Application::getInstance(array('base_path' => dirname(__DIR__)));
 
 // debug enable.
 $app['debug'] = true;

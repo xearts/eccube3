@@ -27,7 +27,7 @@ require __DIR__.'/../vendor/autoload.php';
 ini_set('display_errors', 'Off');
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_STRICT);
 
-$app = \XeArts\Eccube\Application::getInstance();
+$app = \XeArts\Eccube\Application::getInstance(array('base_path' => dirname(__DIR__)));
 
 // インストールされてなければインストーラにリダイレクト
 if ($app['config']['eccube_install']) {

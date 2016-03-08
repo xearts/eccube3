@@ -28,7 +28,7 @@ if (function_exists('apc_clear_cache')) {
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$app = new Xearts\Eccube\InstallApplication();
+$app = new XeArts\Eccube\InstallApplication(array('base_path' => dirname(__DIR__)));
 $app['debug'] = true;
 $app->before(function (\Symfony\Component\HttpFoundation\Request $request, \Silex\Application $app) {
     if (!$request->getSession()->isStarted()) {

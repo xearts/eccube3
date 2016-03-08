@@ -1,5 +1,5 @@
 <?php
-namespace \XeArts\Eccube\ControllerProvider;
+namespace XeArts\Eccube\ControllerProvider;
 
 use Silex\Application;
 use Silex\ControllerProviderInterface;
@@ -8,11 +8,13 @@ class InstallControllerProvider implements ControllerProviderInterface
 {
     public function connect(Application $app)
     {
+
         /* @var $controllers \Silex\ControllerCollection */
         $controllers = $app['controllers_factory'];
 
         // installer
-        $controllers->match('', "\\XeArts\\Eccube\\Controller\\Install\\InstallController::index")->bind('install');
+        $controllers->match('', "\\XeArts\\Eccube\\Controller\\Install\\InstallController::index")
+            ->bind('install');
         $controllers->match('/step1', "\\XeArts\\Eccube\\Controller\\Install\\InstallController::step1")
             ->bind('install_step1');
         $controllers->match('/step2', "\\XeArts\\Eccube\\Controller\\Install\\InstallController::step2")
