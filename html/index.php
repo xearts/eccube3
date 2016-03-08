@@ -22,12 +22,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-require __DIR__.'/../autoload.php';
+require __DIR__.'/../vendor/autoload.php';
 
 ini_set('display_errors', 'Off');
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_STRICT);
 
-$app = \Eccube\Application::getInstance();
+$app = \XeArts\Eccube\Application::getInstance();
 
 // インストールされてなければインストーラにリダイレクト
 if ($app['config']['eccube_install']) {

@@ -42,12 +42,12 @@ if (isset($_SERVER['HTTP_CLIENT_IP'])
     exit('You are not allowed to access this file. Check '.basename(__FILE__).' for more information.');
 }
 
-require_once __DIR__.'/../autoload.php';
+require_once __DIR__.'/../vendor/autoload.php';
 
 Debug::enable();
 
 // load configs.
-$app = \Eccube\Application::getInstance();
+$app = \XeArts\Eccube\Application::getInstance();
 
 // debug enable.
 $app['debug'] = true;
