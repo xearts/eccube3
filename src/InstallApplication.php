@@ -15,21 +15,23 @@ class InstallApplication extends BaseApplication
         parent::__construct($values);
 
         $app->register(new \Silex\Provider\MonologServiceProvider(), array(
-            'monolog.logfile' => __DIR__.'/../../app/log/install.log',
+            'monolog.logfile' => __DIR__.'/../app/log/install.log',
         ));
 
+        $resourcePath = __DIR__.'/../vendor/ec-cube/ec-cube/src/Eccube/Resource';
+        $configPath = $resourcePath . '/config';
+
         // load config
-        $app['config'] = $app->share(function() {
-            $distPath = __DIR__.'/../../src/Eccube/Resource/config';
+        $app['config'] = $app->share(function() use ($configPath) {
 
             $configConstant = array();
-            $constantYamlPath = $distPath.'/constant.yml.dist';
+            $constantYamlPath = $configPath.'/constant.yml.dist';
             if (file_exists($constantYamlPath)) {
                 $configConstant = Yaml::parse(file_get_contents($constantYamlPath));
             }
 
             $configLog = array();
-            $logYamlPath = $distPath.'/log.yml.dist';
+            $logYamlPath = $configPath.'/log.yml.dist';
             if (file_exists($logYamlPath)) {
                 $configLog = Yaml::parse(file_get_contents($logYamlPath));
             }
@@ -39,8 +41,7 @@ class InstallApplication extends BaseApplication
             return $config;
         });
 
-        $distPath = __DIR__.'/../../src/Eccube/Resource/config';
-        $config_dist = Yaml::parse(file_get_contents($distPath.'/config.yml.dist'));
+        $config_dist = Yaml::parse(file_get_contents($configPath.'/config.yml.dist'));
         if (!empty($config_dist['timezone'])) {
             date_default_timezone_set($config_dist['timezone']);
         }
@@ -48,7 +49,7 @@ class InstallApplication extends BaseApplication
         $app->register(new \Silex\Provider\SessionServiceProvider());
 
         $app->register(new \Silex\Provider\TwigServiceProvider(), array(
-            'twig.path' => array(__DIR__.'/Resource/template/install'),
+            'twig.path' => array($resourcePath.'/template/install'),
             'twig.form.templates' => array('bootstrap_3_horizontal_layout.html.twig'),
         ));
 
@@ -59,7 +60,7 @@ class InstallApplication extends BaseApplication
         $this->register(new \Silex\Provider\TranslationServiceProvider(), array(
             'locale' => 'ja',
         ));
-        $app['translator'] = $app->share($app->extend('translator', function($translator, \Silex\Application $app) {
+        $app['translator'] = $app->share($app->extend('translator', function($translator, \Silex\Application $app) use ($resourcePath) {
             $translator->addLoader('yaml', new \Symfony\Component\Translation\Loader\YamlFileLoader());
 
             $r = new \ReflectionClass('Symfony\Component\Validator\Validator');
@@ -68,12 +69,12 @@ class InstallApplication extends BaseApplication
                 $translator->addResource('xliff', $file, $app['locale'], 'validators');
             }
 
-            $file = __DIR__.'/Resource/locale/validator.'.$app['locale'].'.yml';
+            $file = $resourcePath.'/locale/validator.'.$app['locale'].'.yml';
             if (file_exists($file)) {
                 $translator->addResource('yaml', $file, $app['locale'], 'validators');
             }
 
-            $translator->addResource('yaml', __DIR__.'/Resource/locale/ja.yml', $app['locale']);
+            $translator->addResource('yaml', $resourcePath.'/locale/ja.yml', $app['locale']);
 
             return $translator;
         }));
