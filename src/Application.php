@@ -2,6 +2,7 @@
 namespace XeArts\Eccube;
 
 use Eccube\Application as BaseApplication;
+use Eccube\Common\Constant;
 use Eccube\ControllerProvider\AdminControllerProvider;
 use Eccube\ControllerProvider\FrontControllerProvider;
 use Eccube\ServiceProvider\EccubeMonologServiceProvider;
