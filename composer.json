@@ -7,7 +7,7 @@
     }
   ],
   "require": {
-    "ec-cube/ec-cube": "3.0.9"
+    "ec-cube/ec-cube": "3.0.10"
   },
   "require-dev": {
 

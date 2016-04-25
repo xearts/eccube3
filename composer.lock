@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "8e288f508cb2927ce59a0ffe4a0ad0fd",
-    "content-hash": "1fa6d53dce7c7d6c5cb4a505cf51c079",
+    "hash": "d8c9ac8b61f168495fc5613541735026",
+    "content-hash": "454f1a1b6bc39c4782e55a974e3bd646",
     "packages": [
         {
             "name": "dflydev/doctrine-orm-service-provider",
@@ -671,16 +671,16 @@
         },
         {
             "name": "ec-cube/ec-cube",
-            "version": "3.0.9",
+            "version": "3.0.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/EC-CUBE/ec-cube.git",
-                "reference": "76e072d6a1c9fa77c573d1af3357e832cf2830c3"
+                "reference": "77d0fe36859627dcd0c486f6c4a7ae5161b32296"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/EC-CUBE/ec-cube/zipball/76e072d6a1c9fa77c573d1af3357e832cf2830c3",
-                "reference": "76e072d6a1c9fa77c573d1af3357e832cf2830c3",
+                "url": "https://api.github.com/repos/EC-CUBE/ec-cube/zipball/77d0fe36859627dcd0c486f6c4a7ae5161b32296",
+                "reference": "77d0fe36859627dcd0c486f6c4a7ae5161b32296",
                 "shasum": ""
             },
             "require": {
@@ -751,7 +751,7 @@
             ],
             "description": "EC-CUBE EC open platform.",
             "homepage": "http://www.ec-cube.net/",
-            "time": "2016-02-17 01:36:51"
+            "time": "2016-04-25 04:38:16"
         },
         {
             "name": "egulias/email-validator",

@@ -200,7 +200,8 @@ class Application extends BaseApplication
                 } else {
                     $cacheBaseDir = $this['config']['root_dir'].'/app/cache/twig/production/';
                 }
-                if (strpos($app['request']->getPathInfo(), '/'.trim($app['config']['admin_route'], '/')) === 0) {
+                $pathinfo = rawurldecode($app['request']->getPathInfo());
+                if (strpos($pathinfo, '/'.trim($app['config']['admin_route'], '/')) === 0) {
                     if (file_exists($this['config']['root_dir'].'/app/template/admin')) {
                         $paths[] = $this['config']['root_dir'].'/app/template/admin';
                     }
@@ -224,7 +225,8 @@ class Application extends BaseApplication
             }));
 
             // 管理画面のIP制限チェック.
-            if (strpos($app['request']->getPathInfo(), '/'.trim($app['config']['admin_route'], '/')) === 0) {
+            $pathinfo = rawurldecode($app['request']->getPathInfo());
+            if (strpos($pathinfo, '/'.trim($app['config']['admin_route'], '/')) === 0) {
                 // IP制限チェック
                 $allowHost = $app['config']['admin_allow_host'];
                 if (count($allowHost) > 0) {
@@ -242,7 +244,8 @@ class Application extends BaseApplication
             $BaseInfo = $app['eccube.repository.base_info']->get();
             $app['twig']->addGlobal('BaseInfo', $BaseInfo);
 
-            if (strpos($app['request']->getPathInfo(), '/'.trim($app['config']['admin_route'], '/')) === 0) {
+            $pathinfo = rawurldecode($app['request']->getPathInfo());
+            if (strpos($pathinfo, '/'.trim($app['config']['admin_route'], '/')) === 0) {
                 // 管理画面
                 // 管理画面メニュー
                 $menus = array('', '', '');
