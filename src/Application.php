@@ -12,6 +12,7 @@ use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Yaml\Yaml;
+use XeArts\Eccube\Swift\Mime\HeaderEncoder\Base64HeaderEncoder;
 
 class Application extends BaseApplication
 {
@@ -301,8 +302,14 @@ class Application extends BaseApplication
             if ($this['config']['mail']['charset_iso_2022_jp'] === true) {
                 \Swift::init(function() {
                     \Swift_DependencyContainer::getInstance()
+                        ->register('mime.base64headerencoder.xaamuzu')
+                        ->asNewInstanceOf(Base64HeaderEncoder::class)
+                        ->withDependencies(array('mime.charstream'))
+
                         ->register('mime.qpheaderencoder')
-                        ->asAliasOf('mime.base64headerencoder');
+                        ->asAliasOf('mime.base64headerencoder.xaamuzu');
+//                        ->register('mime.qpheaderencoder')
+//                        ->asAliasOf('mime.base64headerencoder');
                     \Swift_Preferences::getInstance()->setCharset('iso-2022-jp');
                 });
             }
